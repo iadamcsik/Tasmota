@@ -384,6 +384,7 @@ void CommandHandler(char* topicBuf, char* dataBuf, uint32_t data_len) {
   GetFallbackTopic_P(stemp1, "");  // Full Fallback topic = cmnd/DVES_xxxxxxxx_fb/
   TasmotaGlobal.fallback_topic_flag = (!strncmp(topicBuf, stemp1, strlen(stemp1)));
 
+// =================================================================================
   char *type = strrchr(topicBuf, '/');   // Last part of received topic is always the command (type)
 
   uint32_t index = 1;
