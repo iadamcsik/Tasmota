@@ -528,7 +528,11 @@ bool (* const xsns_func_ptr[])(uint32_t) = {  // Sensor Function Pointers for si
 #endif
 
 #ifdef XSNS_127
-  &Xsns127
+  &Xsns127,
+#endif
+
+#ifdef XSNS_128
+  &Xsns128
 #endif
 };
 

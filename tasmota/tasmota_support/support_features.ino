@@ -958,7 +958,9 @@ constexpr uint32_t feature[] = {
 #if defined(USE_I2C) && defined(USE_AP33772S)
   0x00040000 |  // xdrv_119_i2c_ap33772s
 #endif  
-//  0x00080000 |  // 
+#if defined(USE_I2C) && defined(USE_TCS34725)
+  0x00080000 |  // xsns_128_TCS34725.ino
+#endif
 //  0x00100000 |  // 
 //  0x00200000 |  // 
 //  0x00400000 |  // 

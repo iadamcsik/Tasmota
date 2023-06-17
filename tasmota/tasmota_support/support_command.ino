@@ -396,6 +396,7 @@ void CommandHandler(char* topicBuf, char* dataBuf, uint32_t data_len) {
 
   TasmotaGlobal.fallback_topic_flag = GetFallbackTopicFlag(topicBuf);
 
+// =================================================================================
   char *type = strrchr(topicBuf, '/');   // Last part of received topic is always the command (type)
 
   uint32_t index = 1;
