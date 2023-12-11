@@ -16,7 +16,11 @@ if (current_time < sunrise || sunset < current_time)
 end
 
 if (persist.has('lamp_init'))
-  mqtt.subscribe(persist.lamp_topic, switch_lamp)
+  lamp_topic = persist.lamp_topic
+  shelly_host = persist.shelly_host
+  shelly_id = persist.shelly_id
+  shelly_auth = persist.shelly_auth
+  mqtt.subscribe(lamp_topic, switch_lamp)
 end
 
 def switch_lamp(topic, idx, payload_s)
