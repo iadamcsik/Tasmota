@@ -9,7 +9,7 @@ tasmota.add_rule('Time#Minute=%sunset%', def () lamp_enabled = true end)
 tasmota.add_rule('Time#Minute=%sunrise%', def () lamp_enabled = false end)
 var time_status = tasmota.cmd('Status 7')['StatusTIM']
 var sunrise = time_status['Sunrise']
-var sunset = time_status.['Sunset']
+var sunset = time_status['Sunset']
 var current_time = tasmota.strftime('%H:%M', tasmota.rtc().local)
 if (current_time < sunrise || sunset < current_time)
   lamp_enabled = true
