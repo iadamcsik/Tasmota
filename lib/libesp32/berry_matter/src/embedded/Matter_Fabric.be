@@ -75,7 +75,7 @@ class Matter_Fabric : Matter_Expirable
     self._store = store
     self._sessions = matter.Expirable_list()
     self.fabric_label = ""
-    self.created = tasmota.rtc()['utc']
+    self.created = tasmota.rtc_utc()
     # init group counters
     self._counter_group_data_snd_impl = matter.Counter()
     self._counter_group_ctrl_snd_impl  = matter.Counter()
@@ -102,8 +102,7 @@ class Matter_Fabric : Matter_Expirable
     if name != nil
       return name
     else
-      import string
-      return string.format("0x%04X", vnd)
+      return f"0x{vnd:04X}"
     end
   end
 
@@ -184,9 +183,8 @@ class Matter_Fabric : Matter_Expirable
   # Provide the next counter value, and update the last know persisted if needed
   #
   def counter_group_data_snd_next()
-    import string
     var next = self._counter_group_data_snd_impl.next()
-    tasmota.log(string.format("MTR: .          Counter_group_data_snd=%i", next), 3)
+    tasmota.log(f"MTR: .          Counter_group_data_snd={next:i}", 3)
     if matter.Counter.is_greater(next, self.counter_group_data_snd)
       self.counter_group_data_snd = next + self._GROUP_SND_INCR
       if self.does_persist()
@@ -200,9 +198,8 @@ class Matter_Fabric : Matter_Expirable
   # Provide the next counter value, and update the last know persisted if needed
   #
   def counter_group_ctrl_snd_next()
-    import string
     var next = self._counter_group_ctrl_snd_impl.next()
-    tasmota.log(string.format("MTR: .          Counter_group_ctrl_snd=%i", next), 3)
+    tasmota.log(f"MTR: .          Counter_group_ctrl_snd={next:i}", 3)
     if matter.Counter.is_greater(next, self.counter_group_ctrl_snd)
       self.counter_group_ctrl_snd = next + self._GROUP_SND_INCR
       if self.does_persist()
@@ -216,15 +213,13 @@ class Matter_Fabric : Matter_Expirable
   #############################################################
   # Called before removal
   def log_new_fabric()
-    import string
-    tasmota.log(string.format("MTR: +Fabric    fab='%s' vendorid=%s", self.get_fabric_id().copy().reverse().tohex(), self.get_admin_vendor_name()), 3)
+    tasmota.log(format("MTR: +Fabric    fab='%s' vendorid=%s", self.get_fabric_id().copy().reverse().tohex(), self.get_admin_vendor_name()), 3)
   end
 
   #############################################################
   # Called before removal
   def before_remove()
-    import string
-    tasmota.log(string.format("MTR: -Fabric    fab='%s' (removed)", self.get_fabric_id().copy().reverse().tohex()), 3)
+    tasmota.log(format("MTR: -Fabric    fab='%s' (removed)", self.get_fabric_id().copy().reverse().tohex()), 3)
   end
 
   #############################################################
@@ -252,7 +247,9 @@ class Matter_Fabric : Matter_Expirable
   def add_session(s)
     if self._sessions.find(s) == nil
       while size(self._sessions) >= self._MAX_CASE
-        self._sessions.remove(self._sessions.find(self.get_oldest_session()))
+        var session_deleted = self.get_oldest_session()
+        self._sessions.remove(self._sessions.find(session_deleted))
+        self._store.remove_session(session_deleted)
       end
       self._sessions.push(s)
     end
@@ -287,7 +284,6 @@ class Matter_Fabric : Matter_Expirable
   #############################################################
   def tojson()
     import json
-    import string
     import introspect
 
     self.persist_pre()
@@ -303,7 +299,7 @@ class Matter_Fabric : Matter_Expirable
       var v = introspect.get(self, k)
       if v == nil     continue end
       if  isinstance(v, bytes)      v = "$$" + v.tob64() end    # bytes
-      r.push(string.format("%s:%s", json.dump(str(k)), json.dump(v)))
+      r.push(format("%s:%s", json.dump(str(k)), json.dump(v)))
     end
 
     # add sessions

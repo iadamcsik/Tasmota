@@ -44,11 +44,11 @@ var haspmota = module("haspmota")
 #################################################################################
 #################################################################################
 class lvh_obj
-  static _lv_class = lv.obj     # _lv_class refers to the lvgl class encapsulated, and is overriden by subclasses
-  static _lv_part2_selector     # selector for secondary part (like knob of arc)
+  static var _lv_class = lv.obj     # _lv_class refers to the lvgl class encapsulated, and is overriden by subclasses
+  static var _lv_part2_selector     # selector for secondary part (like knob of arc)
 
   # attributes to ignore when set at object level (they are managed by page)
-  static _attr_ignore = [
+  static var _attr_ignore = [
     "tostring",    # avoid issues with Berry `tostring` method
     # "id",
     "obj",
@@ -68,7 +68,7 @@ class lvh_obj
   # Ex: HASPmota attribute `w` is mapped to LVGL `width`
   #
   # If mapping is null, we use set_X and get_X from our own class
-  static _attr_map = {
+  static var _attr_map = {
     "x": "x",
     "y": "y",
     "w": "width",
@@ -337,7 +337,6 @@ class lvh_obj
 
     var event_hasp = self._event_map.find(code)
     if event_hasp != nil
-      import string
       import json
 
       var tas_event_more = ""   # complementary data
@@ -345,7 +344,7 @@ class lvh_obj
         try
           # try to get the new val
           var val = self.val
-          if val != nil   tas_event_more = string.format(',"val":%s', json.dump(val)) end
+          if val != nil   tas_event_more = format(',"val":%s', json.dump(val)) end
           var text = self.text
           if text != nil
             tas_event_more += ',"text":'
@@ -354,7 +353,7 @@ class lvh_obj
         except ..
         end
       end
-      var tas_event = string.format('{"hasp":{"p%ib%i":{"event":"%s"%s}}}', self._page._page_id, self.id, event_hasp, tas_event_more)
+      var tas_event = format('{"hasp":{"p%ib%i":{"event":"%s"%s}}}', self._page._page_id, self.id, event_hasp, tas_event_more)
       # print("val=",val)
       tasmota.set_timer(0, /-> tasmota.publish_rule(tas_event))
     end
@@ -379,17 +378,17 @@ class lvh_obj
   end
 
   #====================================================================
-  #  `enabled` attributes mapped to OBJ_FLAG_CLICKABLE
+  #  `enabled` attributes mapped to STATE_DISABLED
   #====================================================================
   def set_enabled(h)
     if h
-      self._lv_obj.add_flag(lv.OBJ_FLAG_CLICKABLE)
+      self._lv_obj.clear_state(lv.STATE_DISABLED)
     else
-      self._lv_obj.clear_flag(lv.OBJ_FLAG_CLICKABLE)
+      self._lv_obj.add_state(lv.STATE_DISABLED)
     end
   end
   def get_enabled()
-    return self._lv_obj.has_flag(lv.OBJ_FLAG_CLICKABLE)
+    return !self._lv_obj.has_state(lv.STATE_DISABLED)
   end
 
   #====================================================================
@@ -401,19 +400,19 @@ class lvh_obj
   #====================================================================
   #  line_width
   #====================================================================
-  def set_line_width(t)
-    self._lv_obj.set_style_line_width(int(t), 0 #- lv.PART_MAIN | lv.STATE_DEFAULT -#)
+  def set_line_width(t, style_modifier)
+    self._lv_obj.set_style_line_width(int(t), style_modifier)
   end
-  def get_line_width()
-    return self._lv_obj.get_style_line_width(0 #- lv.PART_MAIN | lv.STATE_DEFAULT -#)
+  def get_line_width(style_modifier)
+    return self._lv_obj.get_style_line_width(style_modifier)
   end
 
   #====================================================================
   #  `toggle` attributes mapped to STATE_CHECKED
   #====================================================================
   def set_toggle(t)
+    import string
     if type(t) == 'string'
-      import string
       t = string.toupper(str(t))
       if   t == "TRUE"  t = true
       elif t == "FALSE" t = false
@@ -583,11 +582,11 @@ class lvh_obj
   #====================================================================
   #  `text_color`
   #====================================================================
-  def set_text_color(t)
-    self._lv_obj.set_style_text_color(self.parse_color(t), 0 #- lv.PART_MAIN | lv.STATE_DEFAULT -#)
+  def set_text_color(t, style_modifier)
+    self._lv_obj.set_style_text_color(self.parse_color(t), style_modifier)
   end
-  def get_text_color()
-    return self._lv_obj.get_style_text_color(0 #- lv.PART_MAIN | lv.STATE_DEFAULT -#)
+  def get_text_color(style_modifier)
+    return self._lv_obj.get_style_text_color(style_modifier)
   end
   def set_value_color(t) self.set_text_color(t) end
   def get_value_color() return self.get_value_color() end
@@ -687,6 +686,99 @@ class lvh_obj
   end
 
   #- ------------------------------------------------------------#
+  # `digits_to_style` 
+  # 
+  # Convert a 2 digits style descriptor to LVGL style modifier
+  # See https://www.openhasp.com/0.6.3/design/styling/
+  #
+  #
+  # 00 = main part of the object (i.e. the background)
+  # 10 = the indicator or needle, highlighting the the current value
+  # 20 = the knob which can be used the change the value
+  # 30 = the background of the items/buttons
+  # 40 = the items/buttons
+  # 50 = the selected item
+  # 60 = major ticks of the gauge object
+  # 70 = the text cursor
+  # 80 = the scrollbar
+  # 90 = other special part, not listed above
+  #
+  # LV_PART_MAIN         = 0x000000,   /**< A background like rectangle*/
+  # LV_PART_SCROLLBAR    = 0x010000,   /**< The scrollbar(s)*/
+  # LV_PART_INDICATOR    = 0x020000,   /**< Indicator, e.g. for slider, bar, switch, or the tick box of the checkbox*/
+  # LV_PART_KNOB         = 0x030000,   /**< Like handle to grab to adjust the value*/
+  # LV_PART_SELECTED     = 0x040000,   /**< Indicate the currently selected option or section*/
+  # LV_PART_ITEMS        = 0x050000,   /**< Used if the widget has multiple similar elements (e.g. table cells)*/
+  # LV_PART_TICKS        = 0x060000,   /**< Ticks on scale e.g. for a chart or meter*/
+  # LV_PART_CURSOR       = 0x070000,   /**< Mark a specific place e.g. for text area's cursor or on a chart*/
+  # LV_PART_CUSTOM_FIRST = 0x080000,    /**< Extension point for custom widgets*/
+  # LV_PART_ANY          = 0x0F0000,    /**< Special value can be used in some functions to target all parts*/
+  #
+  # 00 = default styling
+  # 01 = styling for toggled state
+  # 02 = styling for pressed, not toggled state
+  # 03 = styling for pressed and toggled state
+  # 04 = styling for disabled not toggled state
+  # 05 = styling for disabled and toggled state
+  #
+  # LV_STATE_DEFAULT     =  0x0000,
+  # LV_STATE_CHECKED     =  0x0001,
+  # LV_STATE_FOCUSED     =  0x0002,
+  # LV_STATE_FOCUS_KEY   =  0x0004,
+  # LV_STATE_EDITED      =  0x0008,
+  # LV_STATE_HOVERED     =  0x0010,
+  # LV_STATE_PRESSED     =  0x0020,
+  # LV_STATE_SCROLLED    =  0x0040,
+  # LV_STATE_DISABLED    =  0x0080,
+
+  # LV_STATE_USER_1      =  0x1000,
+  # LV_STATE_USER_2      =  0x2000,
+  # LV_STATE_USER_3      =  0x4000,
+  # LV_STATE_USER_4      =  0x8000,
+  #
+  #- ------------------------------------------------------------#
+  static var _digit2part = [
+    lv.PART_MAIN,         # 00
+    lv.PART_INDICATOR,    # 10
+    lv.PART_KNOB,         # 20
+    lv.PART_ITEMS,        # 30    TODO
+    lv.PART_ITEMS,        # 40
+    lv.PART_SELECTED,     # 50
+    lv.PART_TICKS,        # 60
+    lv.PART_CURSOR,       # 70
+    lv.PART_SCROLLBAR,    # 80
+    lv.PART_CUSTOM_FIRST, # 90
+  ]
+  static var _digit2state = [
+    lv.STATE_DEFAULT,                     # 00
+    lv.STATE_CHECKED,                     # 01
+    lv.STATE_PRESSED,                     # 02
+    lv.STATE_CHECKED | lv.STATE_PRESSED,  # 03
+    lv.STATE_DISABLED,                    # 04
+    lv.STATE_DISABLED | lv.STATE_PRESSED, # 05
+  ]
+  def digits_to_style(digits)
+    if digits == nil    return 0    end     # lv.PART_MAIN | lv.STATE_DEFAULT
+    var first_digit = (digits / 10) % 10
+    var second_digit = digits % 10
+    var val = 0     # lv.PART_MAIN | lv.STATE_DEFAULT
+    if first_digit >= 0 && first_digit < size(self._digit2part)
+      val = val | self._digit2part[first_digit]
+    else
+      val = nil
+    end
+    if second_digit >= 0 && second_digit < size(self._digit2state)
+      val = val | self._digit2state[second_digit]
+    else
+      val = nil
+    end
+    if val == nil
+      raise "value_error", f"invalid style suffix {digits:02i}"
+    end
+    return val
+  end
+
+  #- ------------------------------------------------------------#
   #  Internal utility functions
   #
   #  Mapping of virtual attributes
@@ -700,14 +792,31 @@ class lvh_obj
 
     # print("> getmember", k)
     var prefix = k[0..3]
-    if prefix == "set_" || prefix == "get_" return end
+    if prefix == "set_" || prefix == "get_" return end    # avoid recursion
+
+    # check if the attribute ends with 2 digits, if so remove the two suffix digits
+    var style_modifier = 0
+    if size(k) >= 3
+      var char_last_1 = string.byte(k[-1])
+      var char_last_2 = string.byte(k[-2])
+      var suffix_digits = nil
+      if (char_last_1 >= 0x30 && char_last_1 <= 0x39 && char_last_2 >= 0x30 && char_last_2 <= 0x39)
+        # we extract the last 2 digits
+        suffix_digits = int(k[-2..])
+        k = k [0..-3]      # remove 2 last digits
+      end
+      style_modifier = self.digits_to_style(suffix_digits)
+    end
+    # print(f">>>: getmember {k=} {style_modifier=}")
+
     # if attribute name is in ignore list, abort
     if self._attr_ignore.find(k) != nil return end
 
     # first check if there is a method named `get_X()`
     var f = introspect.get(self, "get_" + k)  # call self method
     if type(f) == 'function'
-      return f(self)
+      # print(f">>>: getmember local method get_{k}")
+      return f(self, style_modifier)
     end
 
     # next check if there is a mapping to an LVGL attribute
@@ -717,9 +826,11 @@ class lvh_obj
       f = introspect.get(self._lv_obj, "get_" + kv)
       if type(f) == 'function'                  # found and function, call it
         if string.find(kv, "style_") == 0
+          # print(f">>>: getmember style_ method get_{k}")
           # style function need a selector as second parameter
-          return f(self._lv_obj, 0 #- lv.PART_MAIN | lv.STATE_DEFAULT -#)
+          return f(self._lv_obj, style_modifier)
         else
+          # print(f">>>: getmember standard method get_{k}")
           return f(self._lv_obj)
         end
       end
@@ -736,17 +847,33 @@ class lvh_obj
     import string
     import introspect
 
-    # print("> setmember", k, v)
+    # print(">>>: setmember", k, v)
     var prefix = k[0..3]
-    if prefix == "set_" || prefix == "get_" return end
+    if prefix == "set_" || prefix == "get_" return end      # avoid infinite loop
+
+    # check if the attribute ends with 2 digits, if so remove the two suffix digits
+    var style_modifier = 0
+    if size(k) >= 3
+      var char_last_1 = string.byte(k[-1])
+      var char_last_2 = string.byte(k[-2])
+      var suffix_digits = nil
+      if (char_last_1 >= 0x30 && char_last_1 <= 0x39 && char_last_2 >= 0x30 && char_last_2 <= 0x39)
+        # we extract the last 2 digits
+        suffix_digits = int(k[-2..])
+        k = k [0..-3]      # remove 2 last digits
+      end
+      style_modifier = self.digits_to_style(suffix_digits)
+    end
+    # print(f">>>: setmember {k=} {style_modifier=}")
+
     # if attribute name is in ignore list, abort
     if self._attr_ignore.find(k) != nil return end
-
 
     # first check if there is a method named `set_X()`
     var f = introspect.get(self, "set_" + k)
     if type(f) == 'function'
-      f(self, v)
+      # print(f">>>: setmember local method set_{k}")
+      f(self, v, style_modifier)
       return
     end
 
@@ -763,9 +890,11 @@ class lvh_obj
       if type(f) == 'function'
         try
           if string.find(kv, "style_") == 0
+            # print(f">>>: setmember style_ method set_{k}")
             # style function need a selector as second parameter
-            f(self._lv_obj, v, 0 #- lv.PART_MAIN | lv.STATE_DEFAULT -#)
+            f(self._lv_obj, v, style_modifier)
           else
+            # print(f">>>: setmember standard method set_{k}")
             f(self._lv_obj, v)
           end
         except .. as e, m
@@ -798,7 +927,7 @@ class lvh_obj
   # `val_rule_formula`: formula in Berry to transform the value
   #                     Ex: `val * 10`
   # `text_rule`: rule pattern to grab a value for text, ex: `ESP32#Temparature`
-  # `text_rule_format`: format used by `string.format()`
+  # `text_rule_format`: format used by `format()`
   #                     Ex: `%.1f °C`
   #====================================================================
   def set_val_rule(t)
@@ -840,8 +969,7 @@ class lvh_obj
       var func = compile(code)
       self._val_rule_function = func()
     except .. as e, m
-      import string
-      print(string.format("HSP: failed to compile '%s' - %s (%s)", code, e, m))
+      print(format("HSP: failed to compile '%s' - %s (%s)", code, e, m))
     end
   end
   def get_val_rule_formula()
@@ -855,8 +983,7 @@ class lvh_obj
       var func = compile(code)
       self._text_rule_function = func()
     except .. as e, m
-      import string
-      print(string.format("HSP: failed to compile '%s' - %s (%s)", code, e, m))
+      print(format("HSP: failed to compile '%s' - %s (%s)", code, e, m))
     end
   end
   def get_text_rule_formula()
@@ -873,8 +1000,7 @@ class lvh_obj
       try
         val_n = func(val_n)
       except .. as e, m
-        import string
-        print(string.format("HSP: failed to run self._val_rule_function - %s (%s)", e, m))
+        print(format("HSP: failed to run self._val_rule_function - %s (%s)", e, m))
       end
     end
 
@@ -894,20 +1020,18 @@ class lvh_obj
       try
         val = func(val)
       except .. as e, m
-        import string
-        print(string.format("HSP: failed to run self._text_rule_function - %s (%s)", e, m))
+        print(format("HSP: failed to run self._text_rule_function - %s (%s)", e, m))
       end
     end
 
-    var format = self._text_rule_format
-    if type(format) == 'string'
-      import string
-      format = string.format(format, val)
+    var fmt = self._text_rule_format
+    if type(fmt) == 'string'
+      fmt = format(fmt, val)
     else
-      format = ""
+      fmt = ""
     end
 
-    self.text = format
+    self.text = fmt
     return false                  # propagate the event further
   end
 end
@@ -938,11 +1062,11 @@ class lvh_arc : lvh_obj
   static _lv_part2_selector = lv.PART_KNOB
 
   # line_width converts to arc_width
-  def set_line_width(t)
-    self._lv_obj.set_style_arc_width(int(t), 0 #- lv.PART_MAIN | lv.STATE_DEFAULT -#)
+  def set_line_width(t, style_modifier)
+    self._lv_obj.set_style_arc_width(int(t), style_modifier)
   end
-  def get_line_width()
-    return self._lv_obj.get_arc_line_width(0 #- lv.PART_MAIN | lv.STATE_DEFAULT -#)
+  def get_line_width(style_modifier)
+    return self._lv_obj.get_arc_line_width(style_modifier)
   end
   def set_line_width1(t)
     self._lv_obj.set_style_arc_width(int(t), lv.PART_INDICATOR | lv.STATE_DEFAULT)
@@ -990,24 +1114,6 @@ class lvh_switch : lvh_obj
   end
   def get_val()
     return self.get_toggle()
-  end
-  def set_bg_color10(t)
-    self._lv_obj.set_style_bg_color(self.parse_color(t), lv.PART_INDICATOR | lv.STATE_CHECKED)
-  end
-  def set_bg_color20(t)
-    self._lv_obj.set_style_bg_color(self.parse_color(t), lv.PART_KNOB | lv.STATE_DEFAULT)
-  end
-  def set_radius20(t)
-    self._lv_obj.set_style_radius(int(t), lv.PART_KNOB | lv.STATE_DEFAULT)
-  end
-  def get_bg_color10()
-    return self._lv_obj.get_style_bg_color(lv.PART_INDICATOR)
-  end
-  def get_bg_color20()
-    return self._lv_obj.get_style_bg_color(lv.PART_KNOB)
-  end
-  def get_radius20()
-    return self._lv_obj.get_style_radius(lv.PART_KNOB)
   end
 end
 
@@ -1214,13 +1320,20 @@ class lvh_dropdown : lvh_obj
   end
 end
 
+class lvh_bar : lvh_obj
+  static _lv_class = lv.bar
+  
+  def set_val(t)
+    self._lv_obj.set_value(t, lv.ANIM_OFF)
+  end
+end
+
 #################################################################################
 #
 # All other subclasses than just map the LVGL object
 # and doesn't have any specific behavior
 #
 #################################################################################
-class lvh_bar : lvh_obj         static _lv_class = lv.bar         end
 class lvh_btn : lvh_obj         static _lv_class = lv.btn         end
 class lvh_btnmatrix : lvh_obj   static _lv_class = lv.btnmatrix   end
 class lvh_checkbox : lvh_obj    static _lv_class = lv.checkbox    end
@@ -1348,10 +1461,9 @@ class lvh_page
     end
 
     # send page events
-    import string
-    var event_str_in = string.format('{"hasp":{"p%i":"out"}}', self._oh.lvh_page_cur_idx)
+    var event_str_in = format('{"hasp":{"p%i":"out"}}', self._oh.lvh_page_cur_idx)
     tasmota.set_timer(0, /-> tasmota.publish_rule(event_str_in))
-    var event_str_out = string.format('{"hasp":{"p%i":"in"}}', self._page_id)
+    var event_str_out = format('{"hasp":{"p%i":"in"}}', self._page_id)
     tasmota.set_timer(0, /-> tasmota.publish_rule(event_str_out))
 
     # change current page
@@ -1728,7 +1840,6 @@ class HASPmota
   #====================================================================
   def parse_obj(jline, page)
     import global
-    import string
     import introspect
 
     var obj_id = int(jline.find("id"))        # id number or nil
@@ -1743,7 +1854,7 @@ class HASPmota
       try
         func_compiled = compile(berry_run)
       except .. as e,m
-        print(string.format("HSP: unable to compile berry code \"%s\" - '%s' - %s", berry_run, e, m))
+        print(format("HSP: unable to compile berry code \"%s\" - '%s' - %s", berry_run, e, m))
       end
     end
 
@@ -1805,7 +1916,7 @@ class HASPmota
       lvh_page_cur.set_obj(obj_id, obj_lvh)
       
       # create a global variable for this object of form p<page>b<id>, ex p1b2
-      var glob_name = string.format("p%ib%i", lvh_page_cur.id(), obj_id)
+      var glob_name = format("p%ib%i", lvh_page_cur.id(), obj_id)
       global.(glob_name) = obj_lvh
 
     end
@@ -1818,7 +1929,7 @@ class HASPmota
           f_ret(obj_lvh)
         end
       except .. as e,m
-        print(string.format("HSP: unable to run berry code \"%s\" - '%s' - %s", berry_run, e, m))
+        print(format("HSP: unable to run berry code \"%s\" - '%s' - %s", berry_run, e, m))
       end
     end
 
@@ -1856,4 +1967,5 @@ haspmota.init = def (m)         # `init(m)` is called during first `import haspm
   return oh()
 end
 
+global.haspmota = haspmota
 return haspmota

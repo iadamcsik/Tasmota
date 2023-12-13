@@ -118,8 +118,7 @@ class Matter_Session : Matter_Expirable
   #############################################################
   # Called before removal
   def before_remove()
-    import string
-    tasmota.log(string.format("MTR: -Session   (%6i) (removed)", self.local_session_id), 3)
+    tasmota.log(format("MTR: -Session   (%6i) (removed)", self.local_session_id), 3)
   end
 
   #############################################################
@@ -128,9 +127,8 @@ class Matter_Session : Matter_Expirable
   # Provide the next counter value, and update the last know persisted if needed
   #
   def counter_snd_next()
-    import string
     var next = self._counter_snd_impl.next()
-    # tasmota.log(string.format("MTR: .          Counter_snd=%i", next), 4)
+    # tasmota.log(format("MTR: .          Counter_snd=%i", next), 4)
     if matter.Counter.is_greater(next, self.counter_snd)
       self.counter_snd = next + self._COUNTER_SND_INCR
       if self.does_persist()
@@ -167,7 +165,7 @@ class Matter_Session : Matter_Expirable
   #############################################################
   # Update the timestamp or any other information
   def update()
-    self.last_used = tasmota.rtc()['utc']
+    self.last_used = tasmota.rtc_utc()
   end
 
   def set_mode_PASE()   self.set_mode(self._PASE)   end
@@ -256,11 +254,12 @@ class Matter_Session : Matter_Expirable
   def get_icac()              return self._fabric.icac              end
   def get_ipk_epoch_key()     return self._fabric.ipk_epoch_key     end
   def get_fabric_id()         return self._fabric.fabric_id         end
-  def get_device_id()         return self._fabric.device_id         end
-  def get_fabric_compressed() return self._fabric.fabric_compressed end
-  def get_fabric_label()      return self._fabric.fabric_label      end
-  def get_admin_subject()     return self._fabric.admin_subject     end
-  def get_admin_vendor()      return self._fabric.admin_vendor      end
+  def get_fabric_index()      return self._fabric ? self._fabric.fabric_index  : nil    end
+  def get_device_id()         return self._fabric ? self._fabric.device_id : nil        end
+  def get_fabric_compressed() return self._fabric ? self._fabric.fabric_compressed : nil end
+  def get_fabric_label()      return self._fabric ? self._fabric.fabric_label : nil     end
+  def get_admin_subject()     return self._fabric ? self._fabric.admin_subject : nil    end
+  def get_admin_vendor()      return self._fabric ? self._fabric.admin_vendor : nil     end
 
   #############################################################
   # Get operational key pair (private key)
@@ -294,7 +293,6 @@ class Matter_Session : Matter_Expirable
   #############################################################
   def tojson()
     import json
-    import string
     import introspect
 
     self.persist_pre()
@@ -314,7 +312,7 @@ class Matter_Session : Matter_Expirable
       elif type(v) == 'instance'    continue                    # skip any other instance
       end
       
-      r.push(string.format("%s:%s", json.dump(str(k)), json.dump(v)))
+      r.push(format("%s:%s", json.dump(str(k)), json.dump(v)))
     end
     self.persist_post()
     return "{" + r.concat(",") + "}"
