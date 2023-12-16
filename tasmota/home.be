@@ -3,12 +3,12 @@ import persist
 import json
 import string
 
-var lamp_enabled = false, geofence_topic, shelly_host, shelly_id, shelly_auth
+var lamp_enabled = false, geofence_topic, shelly_host, shelly_id, shelly_auth, sunrise, sunset
 
 def lamp_init()
   var time_status = tasmota.cmd('Status 7')['StatusTIM']
-  var sunrise = time_status['Sunrise']
-  var sunset = time_status['Sunset']
+  sunrise = time_status['Sunrise']
+  sunset = time_status['Sunset']
   var current_time = tasmota.strftime('%H:%M', tasmota.rtc()['local'])
   if (current_time < sunrise || sunset < current_time)
     lamp_enabled = true
