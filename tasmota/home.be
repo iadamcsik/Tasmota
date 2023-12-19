@@ -38,7 +38,7 @@ def switch_lamp(topic, idx, payload_s)
   end
 end
 
-var red_lower, red_upper, green_lower, green_upper, ifttt_path, alert_threshold = -1, ifttt_host = "https://maker.ifttt.com/trigger/"
+var red_lower, red_upper, green_lower, green_upper, ifttt_path, alert_threshold = -1, alert_timeout_min = 30, ifttt_host = "https://maker.ifttt.com/trigger/"
 
 tasmota.set_power(1, false)
 tasmota.set_power(0, true)
@@ -56,11 +56,12 @@ def check_color(hue)
     if (alert_threshold < 0)
       tasmota.set_power(1, true)
       tasmota.set_power(0, false)
-      alert_threshold = tasmota.millis(1799000)
+      # subtracting a sec to make sure alert is fired at 30 min not 35 (assuming a 5 min tele period)
+      alert_threshold = tasmota.millis(alert_timeout_min * 60000 - 1000)
     end
     if tasmota.time_reached(alert_threshold)
       do_alert()
-      alert_threshold = tasmota.millis(1799000)
+      alert_threshold = tasmota.millis(alert_timeout_min * 60000 - 1000)
     end
   end
   if (green_lower < hue && hue < green_upper)
