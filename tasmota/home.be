@@ -58,8 +58,7 @@ def check_color(hue)
       tasmota.set_power(0, false)
       # subtracting a sec to make sure alert is fired at 30 min not 35 (assuming a 5 min tele period)
       alert_threshold = tasmota.millis(alert_timeout_min * 60000 - 1000)
-    end
-    if tasmota.time_reached(alert_threshold)
+    elif tasmota.time_reached(alert_threshold)
       do_alert()
       alert_threshold = tasmota.millis(alert_timeout_min * 60000 - 1000)
     end
