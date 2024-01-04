@@ -3,20 +3,31 @@ import persist
 import json
 import string
 
-var lamp_enabled = false, geofence_topic, shelly_host, shelly_id, shelly_auth, init_sunrise, init_sunset
+var lamp_enabled = false, geofence_topic, shelly_host, shelly_id, shelly_auth, sunrise, sunset
+
+def adjust_daylight()
+  var time_status = tasmota.cmd('Status 7')['StatusTIM']
+  sunrise = string.split(time_status['Sunrise'], ':')
+  sunset = string.split(time_status['Sunset'], ':')
+  tasmota.remove_cron("sunset")
+  tasmota.remove_cron("sunrise")
+  tasmota.add_cron(string.format('0 %d %d * * *', int(sunset[1]), int(sunset[0])), def () lamp_enabled = true end, "sunset")
+  tasmota.add_cron(string.format('0 %d %d * * *', int(sunrise[1]), int(sunrise[0])), def () lamp_enabled = false end, "sunrise")
+end
 
 def lamp_init()
   var time_status = tasmota.cmd('Status 7')['StatusTIM']
-  init_sunrise = time_status['Sunrise']
-  init_sunset = time_status['Sunset']
+  sunrise = time_status['Sunrise']
+  sunset = time_status['Sunset']
   var current_time = tasmota.strftime('%H:%M', tasmota.rtc()['local'])
-  if (current_time < init_sunrise || init_sunset < current_time)
+  if (current_time < sunrise || sunset < current_time)
     lamp_enabled = true
   end
+  adjust_daylight()
 end
-tasmota.add_rule('Time#Minute=%sunset%', def () lamp_enabled = true end)
-tasmota.add_rule('Time#Minute=%sunrise%', def () lamp_enabled = false end)
+
 tasmota.add_rule('Time#Initialized', lamp_init)
+tasmota.add_cron('0 0 0 * * 0', adjust_daylight)
 
 def shelly_call(action)
   if !tasmota.wifi()['up'] && !tasmota.eth()['up'] return end
@@ -52,7 +63,7 @@ def do_alert()
 end
 
 def check_color(hue)
-  if (red_lower < hue && hue < red_upper)
+  if (red_lower < hue || hue < red_upper)
     if (alert_threshold < 0)
       tasmota.set_power(1, true)
       tasmota.set_power(0, false)
@@ -63,7 +74,7 @@ def check_color(hue)
       alert_threshold = tasmota.millis(alert_timeout_min * 60000 - 1000)
     end
   end
-  if (green_lower < hue && hue < green_upper)
+  if (alert_threshold > 0 && green_lower < hue && hue < green_upper)
     tasmota.set_power(1, false)
     tasmota.set_power(0, true)
     alert_threshold = -1
