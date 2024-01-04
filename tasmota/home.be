@@ -3,14 +3,14 @@ import persist
 import json
 import string
 
-var lamp_enabled = false, geofence_topic, shelly_host, shelly_id, shelly_auth, sunrise, sunset
+var lamp_enabled = false, geofence_topic, shelly_host, shelly_id, shelly_auth, init_sunrise, init_sunset
 
 def lamp_init()
   var time_status = tasmota.cmd('Status 7')['StatusTIM']
-  sunrise = time_status['Sunrise']
-  sunset = time_status['Sunset']
+  init_sunrise = time_status['Sunrise']
+  init_sunset = time_status['Sunset']
   var current_time = tasmota.strftime('%H:%M', tasmota.rtc()['local'])
-  if (current_time < sunrise || sunset < current_time)
+  if (current_time < init_sunrise || init_sunset < current_time)
     lamp_enabled = true
   end
 end
@@ -84,5 +84,5 @@ if (persist.has('monitor_init'))
   green_lower = persist.green_lower
   green_upper = persist.green_upper
   ifttt_path = persist.ifttt_path
-  tasmota.add_rule('Tele-TCS34725#H', def (value) check_color(value) end)
+  tasmota.add_rule('Tele#TCS34725#H', def (value) check_color(value) end)
 end
