@@ -60,6 +60,7 @@ def do_alert()
   var cl = webclient()
   cl.begin(brevo_endpoint)
   cl.add_header('api-key', brevo_key)
+  cl.add_header('content-type', 'application/json')
   var r = cl.POST(string.format(brevo_rq_template, brevo_from, brevo_to))
   tasmota.log(string.format('Got response: %s, %s', r, cl.get_string()))
 end
