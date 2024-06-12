@@ -49,7 +49,7 @@ def switch_lamp(topic, idx, payload_s)
   end
 end
 
-var red_lower, red_upper, green_lower, green_upper, brevo_key, alert_millis = nil, alert_timeout_min = 30, brevo_endpoint = 'https://api.brevo.com/v3/emailCampaigns', brevo_from, brevo_to
+var red_lower, red_upper, green_lower, green_upper, brevo_key, alert_millis = nil, alert_timeout_min = 30, brevo_endpoint = 'https://api.brevo.com/v3/smtp/email', brevo_from, brevo_to
 var brevo_rq_template = '{ "subject":"My subject", "sender": {"name":"Hőszivattyú", "email":"%s" }, "htmlContent":"Congratulations! You successfully sent this example campaign via the Brevo API.", "to":[ { "email":"%s", "name":"John Doe" } ] }'
 
 tasmota.set_power(1, false)
