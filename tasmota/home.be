@@ -98,5 +98,6 @@ if (persist.has('monitor_init'))
   green_lower = persist.green_lower
   green_upper = persist.green_upper
   brevo_key = persist.brevo_key
+  brevo_to = persist.brevo_to
   tasmota.add_rule('Tele#TCS34725#H', def (value) check_color(value) end)
 end
