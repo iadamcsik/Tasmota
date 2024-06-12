@@ -49,7 +49,8 @@ def switch_lamp(topic, idx, payload_s)
   end
 end
 
-var red_lower, red_upper, green_lower, green_upper, ifttt_path, alert_millis = nil, alert_timeout_min = 30, ifttt_host = "https://maker.ifttt.com/trigger/"
+var red_lower, red_upper, green_lower, green_upper, brevo_key, alert_millis = nil, alert_timeout_min = 30, brevo_endpoint = 'https://api.brevo.com/v3/emailCampaigns', brevo_to
+var brevo_rq_template = '{ "subject":"My subject", "sender": {"name":"From name", "email":"myfromemail@mycompany.com" }, "htmlContent":"Congratulations! You successfully sent this example campaign via the Brevo API.", "to":[ { "email":"%s", "name":"John Doe" } ] }'
 
 tasmota.set_power(1, false)
 tasmota.set_power(0, true)
@@ -57,8 +58,9 @@ tasmota.set_power(0, true)
 def do_alert()
   if !tasmota.wifi()['up'] && !tasmota.eth()['up'] return end
   var cl = webclient()
-  cl.begin(ifttt_host + ifttt_path)
-  var r = cl.POST("")
+  cl.begin(brevo_endpoint)
+  cl.add_header('api-key', brevo_key)
+  var r = cl.POST(string.format(brevo_rq_template, brevo_to))
   tasmota.log(string.format('Got response: %s, %s', r, cl.get_string()))
 end
 
@@ -95,6 +97,6 @@ if (persist.has('monitor_init'))
   red_upper = persist.red_upper
   green_lower = persist.green_lower
   green_upper = persist.green_upper
-  ifttt_path = persist.ifttt_path
+  brevo_key = persist.brevo_key
   tasmota.add_rule('Tele#TCS34725#H', def (value) check_color(value) end)
 end
