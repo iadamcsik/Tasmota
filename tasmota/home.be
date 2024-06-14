@@ -50,7 +50,7 @@ def switch_lamp(topic, idx, payload_s)
 end
 
 var red_lower, red_upper, green_lower, green_upper, brevo_key, alert_millis = nil, alert_timeout_min = 30, brevo_endpoint = 'https://api.brevo.com/v3/smtp/email', brevo_to, brevo_to_name
-var brevo_rq_template = '{ "subject":"\u1F6A8 Hibajelzés \u1F6A8", "sender": {"name":"Hőszivattyú", "email":"hoszivattyu@vintner.hu" }, "htmlContent":"A hőszivattyú legalább 30 perce hibát jelez!", "to":[ { "email":"%s", "name":"%s" } ] }'
+var brevo_rq_template = '{ "subject":"\\u1F6A8 Hibajelzés \\u1F6A8", "sender": {"name":"Hőszivattyú", "email":"hoszivattyu@vintner.hu" }, "htmlContent":"A hőszivattyú legalább 30 perce hibát jelez!", "to":[ { "email":"%s", "name":"%s" } ] }'
 
 tasmota.set_power(1, false)
 tasmota.set_power(0, true)
