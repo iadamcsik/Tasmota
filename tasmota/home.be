@@ -49,8 +49,8 @@ def switch_lamp(topic, idx, payload_s)
   end
 end
 
-var red_lower, red_upper, green_lower, green_upper, brevo_key, alert_millis = nil, alert_timeout_min = 30, brevo_endpoint = 'https://api.brevo.com/v3/smtp/email', brevo_from, brevo_to
-var brevo_rq_template = '{ "subject":"My subject", "sender": {"name":"Hőszivattyú", "email":"%s" }, "htmlContent":"Congratulations! You successfully sent this example campaign via the Brevo API.", "to":[ { "email":"%s", "name":"John Doe" } ] }'
+var red_lower, red_upper, green_lower, green_upper, brevo_key, alert_millis = nil, alert_timeout_min = 30, brevo_endpoint = 'https://api.brevo.com/v3/smtp/email', brevo_to, brevo_to_name
+var brevo_rq_template = '{ "subject":"🚨 Hibajelzés 🚨", "sender": {"name":"Hőszivattyú", "email":"hoszivattyu@vintner.hu" }, "htmlContent":"A hőszivattyú legalább 30 perce hibát jelez!", "to":[ { "email":"%s", "name":"%s" } ] }'
 
 tasmota.set_power(1, false)
 tasmota.set_power(0, true)
@@ -61,7 +61,7 @@ def do_alert()
   cl.begin(brevo_endpoint)
   cl.add_header('api-key', brevo_key)
   cl.add_header('content-type', 'application/json')
-  var r = cl.POST(string.format(brevo_rq_template, brevo_from, brevo_to))
+  var r = cl.POST(string.format(brevo_rq_template, brevo_to, brevo_to_name))
   tasmota.log(string.format('Got response: %s, %s', r, cl.get_string()))
 end
 
@@ -99,7 +99,7 @@ if (persist.has('monitor_init'))
   green_lower = persist.green_lower
   green_upper = persist.green_upper
   brevo_key = persist.brevo_key
-  brevo_from = persist.brevo_from
   brevo_to = persist.brevo_to
+  brevo_to_name = persist.brevo_to_name
   tasmota.add_rule('Tele#TCS34725#H', def (value) check_color(value) end)
 end
