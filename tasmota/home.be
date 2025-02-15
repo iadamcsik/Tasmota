@@ -63,7 +63,7 @@ def send_mail(subject, body)
   cl.begin(brevo_endpoint)
   cl.add_header('api-key', brevo_key)
   cl.add_header('content-type', 'application/json')
-  var r = cl.POST(string.format(subject, body, brevo_rq_template, brevo_to, brevo_to_name))
+  var r = cl.POST(string.format(brevo_rq_template, subject, body, brevo_to, brevo_to_name))
   tasmota.log(string.format('Got response: %s, %s', r, cl.get_string()))
 end
 
@@ -72,7 +72,7 @@ def do_alert()
 end
 
 def do_heartbeat()
-  send_mail('Hőszivattyú heartbeat','')
+  send_mail('Hőszivattyú heartbeat', '')
 end
 
 tasmota.add_cron('0 0 10 * * 6', do_heartbeat, 'heartbeat')
