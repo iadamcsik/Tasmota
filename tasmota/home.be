@@ -27,7 +27,7 @@ def lamp_init()
 end
 
 tasmota.add_rule('Time#Initialized', lamp_init)
-tasmota.add_cron('0 0 0 * * 0', adjust_daylight)
+tasmota.add_cron('0 0 0 * * 0', adjust_daylight, 'adjust')
 
 def shelly_call(action)
   if !tasmota.wifi()['up'] && !tasmota.eth()['up'] return end
@@ -50,20 +50,32 @@ def switch_lamp(topic, idx, payload_s)
 end
 
 var red_lower, red_upper, green_lower, green_upper, brevo_key, alert_millis = nil, alert_timeout_min = 30, brevo_endpoint = 'https://api.brevo.com/v3/smtp/email', brevo_to, brevo_to_name
-var brevo_rq_template = '{ "subject":"\\uD83D\\uDEA8 Hibajelzés \\uD83D\\uDEA8", "sender": {"name":"Hőszivattyú", "email":"hoszivattyu@vintner.hu" }, "htmlContent":"A hőszivattyú legalább 30 perce hibát jelez!", "to":[ { "email":"%s", "name":"%s" } ] }'
+var brevo_rq_template = '{ "subject":"%s", "sender": {"name":"Hőszivattyú", "email":"hoszivattyu@vintner.hu" }, "htmlContent":"%s", "to":[ { "email":"%s", "name":"%s" } ] }'
+var alert_subject = '\\uD83D\\uDEA8 Hibajelzés \\uD83D\\uDEA8'
+var alert_body = 'A hőszivattyú legalább 30 perce hibát jelez!'
 
 tasmota.set_power(1, false)
 tasmota.set_power(0, true)
 
-def do_alert()
+def send_mail(subject, body)
   if !tasmota.wifi()['up'] && !tasmota.eth()['up'] return end
   var cl = webclient()
   cl.begin(brevo_endpoint)
   cl.add_header('api-key', brevo_key)
   cl.add_header('content-type', 'application/json')
-  var r = cl.POST(string.format(brevo_rq_template, brevo_to, brevo_to_name))
+  var r = cl.POST(string.format(subject, body, brevo_rq_template, brevo_to, brevo_to_name))
   tasmota.log(string.format('Got response: %s, %s', r, cl.get_string()))
 end
+
+def do_alert()
+  send_mail(alert_subject, alert_body)
+end
+
+def do_heartbeat()
+  send_mail('Hőszivattyú heartbeat','')
+end
+
+tasmota.add_cron('0 0 10 * * 6', do_heartbeat, 'heartbeat')
 
 def check_color(hue)
   if (red_lower < hue || hue < red_upper)
