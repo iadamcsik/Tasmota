@@ -72,7 +72,7 @@ def do_alert()
 end
 
 def do_heartbeat()
-  send_mail('Hőszivattyú heartbeat', '')
+  send_mail('Hőszivattyú heartbeat', 'heartbeat')
 end
 
 tasmota.add_cron('0 0 10 * * 6', do_heartbeat, 'heartbeat')
