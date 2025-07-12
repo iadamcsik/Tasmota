@@ -36,6 +36,7 @@ def shelly_call(action)
   cl.add_header('Content-Type', 'application/x-www-form-urlencoded')
   var r = cl.POST(string.format('id=%s&auth_key=%s&channel=0&turn=%s', shelly_id, shelly_auth, action))
   tasmota.log(string.format('Got response: %s, %s', r, cl.get_string()))
+  cl.close()
 end
 
 def switch_lamp(topic, idx, payload_s)
@@ -65,6 +66,7 @@ def send_mail(subject, body)
   cl.add_header('content-type', 'application/json')
   var r = cl.POST(string.format(brevo_rq_template, subject, body, brevo_to, brevo_to_name))
   tasmota.log(string.format('Got response: %s, %s', r, cl.get_string()))
+  cl.close()
 end
 
 def do_alert()
