@@ -99,7 +99,7 @@ def check_color(hue)
   end
 end
 
-if (persist.has('lamp_init'))
+if (persist.contains('lamp_init'))
   geofence_topic = persist.geofence_topic
   shelly_host = persist.shelly_host
   shelly_id = persist.shelly_id
@@ -107,7 +107,7 @@ if (persist.has('lamp_init'))
   mqtt.subscribe(geofence_topic, switch_lamp)
 end
 
-if (persist.has('monitor_init'))
+if (persist.contains('monitor_init'))
   red_lower = persist.red_lower
   red_upper = persist.red_upper
   green_lower = persist.green_lower
